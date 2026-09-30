@@ -9,7 +9,7 @@ const signup = async (req, res, next) => {
 
     if (existingUser) {
       throw new Error("Email already exists");
-    }
+    } 
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
