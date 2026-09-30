@@ -3,7 +3,7 @@ const User = require("../models/user");
 
 const signup = async (req, res, next) => {
   try {
-    const { firstname, lastname, email, password, role } = req.body;
+    const { firstname, lastname, email, password } = req.body;
 
     const existingUser = await User.findOne({ email });
 
@@ -18,8 +18,10 @@ const signup = async (req, res, next) => {
       lastname,
       email,
       password: hashedPassword,
-      role,
+      role: "student",
     });
+
+    user.password = undefined;
 
     res.status(201).json({
       status: "successful",
