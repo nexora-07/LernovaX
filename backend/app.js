@@ -3,6 +3,8 @@ const cors = require("cors");
 const morgan = require("morgan");
 
 const authRoutes = require("./src/routes/authRoutes");
+const courseRoutes = require("./src/routes/courseRoutes");
+const errorHandler = require("./src/middleware/error");
 const app = express();
 
 const allowedOrigins = [
@@ -23,7 +25,6 @@ app.use(
 );
 
 app.use(morgan("dev"));
-app.use(cors());
 app.use(express.json());
 
 // Welcome route
@@ -44,5 +45,8 @@ app.get("/api/v1", (req, res) => {
 
 // Auth routes
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/courses", courseRoutes);
+
+app.use(errorHandler);
 
 module.exports = app;

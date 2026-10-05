@@ -10,7 +10,7 @@ const createCourse = async (req, res, next) => {
       category,
       price,
       thumbnail,
-      instructor: req.user._id, // Attached by auth middleware
+      instructor: req.user._id,
     });
 
     res.status(201).json({
@@ -19,9 +19,27 @@ const createCourse = async (req, res, next) => {
         course,
       },
     });
-  } catch (error) {}
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getAllCourses = async (req, res, next) => {
+  try {
+    const courses = await Course.find();
+
+    res.status(200).json({
+      status: "successful",
+      data: {
+        courses,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 module.exports = {
   createCourse,
+  getAllCourses,
 };
