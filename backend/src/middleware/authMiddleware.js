@@ -1,58 +1,56 @@
-const Users = require("../models/user.js");
 const jwt = require("jsonwebtoken");
-const AppError = require("../utils/AppError.js");
+const User = require("../models/user");
+const AppError = require("../utils/AppError");
 
 const protectRoute = async (req, res, next) => {
-  try {
-    let token;
+    try {
+        const authorization = req.headers.authorization;
 
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
+        if (!authorization || !/^Bearer\s+\S+$/i.test(authorization)) {
+            throw new AppError("Please sign in to access this resource", 401);
+        }
+
+        if (!process.env.JWT_SECRET || Buffer.byteLength(process.env.JWT_SECRET, "utf8") < 32) {
+            throw new AppError("Authentication is not securely configured", 500);
+        }
+
+        const token = authorization.replace(/^Bearer\s+/i, "");
+        let decoded;
+
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET, {
+                algorithms: ["HS256"],
+            });
+        } catch {
+            throw new AppError("Your session is invalid or has expired", 401);
+        }
+
+        const user = await User.findById(decoded.id);
+
+        if (!user) {
+            throw new AppError("The account for this session no longer exists", 401);
+        }
+
+        req.user = user;
+        return next();
+    } catch (error) {
+        return next(error);
     }
-
-    if (!token) {
-      return next(
-        new AppError("You're not logged in, please login", 401)
-      );
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    const user = await Users.findById(decoded.id);
-
-    if (!user) {
-      return next(
-        new AppError("User with specified ID not found", 404)
-      );
-    }
-
-    req.user = user;
-
-    next();
-  } catch (error) {
-    next(error);
-  }
 };
 
-const restrictTo = (...roles) => {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return next(
-        new AppError(
-          "You are not authorized to access this route",
-          403
-        )
-      );
+const restrictTo = (...roles) => (req, res, next) => {
+    if (!req.user) {
+        return next(new AppError("Please sign in to access this resource", 401));
     }
 
-    next();
-  };
+    if (!roles.includes(req.user.role)) {
+        return next(new AppError("You do not have permission to perform this action", 403));
+    }
+
+    return next();
 };
 
 module.exports = {
-  protectRoute,
-  restrictTo,
+    protectRoute,
+    restrictTo,
 };

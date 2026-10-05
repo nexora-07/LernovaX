@@ -2,72 +2,88 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const AppError = require("../utils/AppError");
+const signJwt = require("../utils/signJWT");
+const { validateSignup, validateLogin } = require("../validation/usersValidation");
+
+const toPublicUser = (user) => ({
+  id: user._id,
+  firstname: user.firstname,
+  lastname: user.lastname,
+  email: user.email,
+  role: user.role,
+  createdAt: user.createdAt,
+});
 
 const signup = async (req, res, next) => {
   try {
+    const validationError = validateSignup(req.body);
+    if (validationError) {
+      throw new AppError(validationError, 400);
+    }
+
+    if (!process.env.JWT_SECRET || Buffer.byteLength(process.env.JWT_SECRET, "utf8") < 32) {
+      throw new AppError("Authentication is not securely configured", 500);
+    }
+
     const { firstname, lastname, email, password } = req.body;
 
-    const existingUser = await User.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+    const existingUser = await User.findOne({ email: normalizedEmail });
 
     if (existingUser) {
-      throw new Error("Email already exists");
-    } 
+      throw new AppError("An account with this email already exists", 409);
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
-      firstname,
-      lastname,
-      email,
+      firstname: firstname.trim(),
+      lastname: lastname.trim(),
+      email: normalizedEmail,
       password: hashedPassword,
       role: "student",
     });
 
-    user.password = undefined;
-
     res.status(201).json({
-      status: "successful",
+      status: "success",
       data: {
-        user,
+        user: toPublicUser(user),
+        token: signJwt(user._id),
       },
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return next(new AppError("An account with this email already exists", 409));
+    }
+
     next(error);
   }
 };
 
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body || {};
-
-    if (typeof email !== "string" || typeof password !== "string") {
-      return next(new AppError("Please provide an email and password", 400));
+    const validationError = validateLogin(req.body);
+    if (validationError) {
+      throw new AppError(validationError, 400);
     }
 
-    if (!process.env.JWT_SECRET) {
-      return next(new Error("JWT_SECRET is not configured"));
+    if (!process.env.JWT_SECRET || Buffer.byteLength(process.env.JWT_SECRET, "utf8") < 32) {
+      throw new AppError("Authentication is not securely configured", 500);
     }
 
-    const user = await User.findOne({ email: email.trim().toLowerCase() })
-      .select("+password");
+    const email = req.body.email.trim().toLowerCase();
+    const user = await User.findOne({ email }).select("+password");
+    const passwordIsValid = user && await bcrypt.compare(req.body.password, user.password);
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return next(new AppError("Incorrect email or password", 401));
+    if (!passwordIsValid) {
+      throw new AppError("Incorrect email or password", 401);
     }
-
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES || "7d" },
-    );
-    const userData = user.toObject();
-    delete userData.password;
 
     res.status(200).json({
-      status: "successful",
-      token,
+      status: "success",
       data: {
-        user: userData,
+        user: toPublicUser(user),
+        token: signJwt(user._id),
       },
     });
   } catch (error) {
@@ -75,7 +91,15 @@ const login = async (req, res, next) => {
   }
 };
 
+const getCurrentUser = (req, res) => {
+  res.status(200).json({
+    status: "success",
+    data: { user: toPublicUser(req.user) },
+  });
+};
+
 module.exports = {
   signup,
   login,
+  getCurrentUser,
 };
