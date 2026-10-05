@@ -1,4 +1,5 @@
 const Course = require("../models/Course");
+const AppError = require("../utils/AppError");
 
 const createCourse = async (req, res, next) => {
   try {

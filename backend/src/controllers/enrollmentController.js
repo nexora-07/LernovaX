@@ -91,9 +91,56 @@ const getMyEnrollments = async (req, res, next) => {
   }
 };
 
+const updateEnrollmentStatus = async (req, res, next) => {
+  try {
+    const studentId = req.user?.id || req.body?.studentId || req.query?.studentId;
+    const { courseId } = req.params;
+    const { status } = req.body || {};
+
+    if (!studentId || !courseId) {
+      return res.status(400).json({
+        status: "failed",
+        message: "studentId and courseId are required",
+      });
+    }
+
+    const validStatuses = ["active", "completed", "cancelled"];
+    const nextStatus = status || "active";
+
+    if (!validStatuses.includes(nextStatus)) {
+      return res.status(400).json({
+        status: "failed",
+        message: "status must be one of: active, completed, cancelled",
+      });
+    }
+
+    const enrollment = await Enrollment.findOneAndUpdate(
+      { student: studentId, course: courseId },
+      { status: nextStatus },
+      { new: true },
+    ).populate("course", "title description category");
+
+    if (!enrollment) {
+      return res.status(404).json({
+        status: "failed",
+        message: "Enrollment not found",
+      });
+    }
+
+    return res.status(200).json({
+      status: "successful",
+      data: {
+        enrollment,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 const cancelEnrollment = async (req, res, next) => {
   try {
-    const studentId = req.user?.id || req.body.studentId || req.query.studentId;
+    const studentId = req.user?.id || req.body?.studentId || req.query?.studentId;
     const { courseId } = req.params;
 
     if (!studentId || !courseId) {
@@ -130,5 +177,6 @@ const cancelEnrollment = async (req, res, next) => {
 module.exports = {
   enrollInCourse,
   getMyEnrollments,
+  updateEnrollmentStatus,
   cancelEnrollment,
 };
