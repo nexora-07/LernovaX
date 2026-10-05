@@ -1,6 +1,7 @@
 const express = require("express");
 const courseController = require("../controllers/coursecontroller");
 const authMiddleware = require("../middleware/authMiddleware");
+const { protectRoute, restrictTo } = authMiddleware;
 
 const router = express.Router();
 
@@ -9,11 +10,18 @@ router
   .post(
     authMiddleware.protectRoute,
     authMiddleware.restrictTo("instructor", "admin"),
-    courseController.createCourse
+    courseController.createCourse,
   );
 
+router.route("/getAllCourses").get(courseController.getAllCourses);
+
 router
-  .route("/getAllCourses")
-  .get(courseController.getAllCourses);
+  .route("/:id")
+  .get(courseController.getCourseById)
+  .patch(
+    protectRoute,
+    restrictTo("instructor", "admin"),
+    courseController.updateCourse,
+  );
 
 module.exports = router;

@@ -39,7 +39,50 @@ const getAllCourses = async (req, res, next) => {
   }
 };
 
+const getCourseById = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return next(new AppError("Course not found", 404));
+    }
+
+    res.status(200).json({
+      status: "successful",
+      data: {
+        course,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!course) {
+      return next(new AppError("Course not found", 404));
+    }
+
+    res.status(200).json({
+      status: "successful",
+      data: {
+        course,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createCourse,
   getAllCourses,
+  getCourseById,
+  updateCourse,
 };
