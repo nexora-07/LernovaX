@@ -6,15 +6,21 @@ const protectRoute = async (req, res, next) => {
     try {
         const authorization = req.headers.authorization;
 
-        if (!authorization || !authorization.startsWith("Bearer ")) {
+        if (!authorization || !/^Bearer\s+\S+$/i.test(authorization)) {
             throw new AppError("Please sign in to access this resource", 401);
         }
 
-        const token = authorization.split(" ")[1];
+        if (!process.env.JWT_SECRET || Buffer.byteLength(process.env.JWT_SECRET, "utf8") < 32) {
+            throw new AppError("Authentication is not securely configured", 500);
+        }
+
+        const token = authorization.replace(/^Bearer\s+/i, "");
         let decoded;
 
         try {
-            decoded = jwt.verify(token, process.env.JWT_SECRET);
+            decoded = jwt.verify(token, process.env.JWT_SECRET, {
+                algorithms: ["HS256"],
+            });
         } catch {
             throw new AppError("Your session is invalid or has expired", 401);
         }
@@ -26,18 +32,22 @@ const protectRoute = async (req, res, next) => {
         }
 
         req.user = user;
-        next();
+        return next();
     } catch (error) {
-        next(error);
+        return next(error);
     }
 };
 
 const restrictTo = (...roles) => (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    if (!req.user) {
+        return next(new AppError("Please sign in to access this resource", 401));
+    }
+
+    if (!roles.includes(req.user.role)) {
         return next(new AppError("You do not have permission to perform this action", 403));
     }
 
-    next();
+    return next();
 };
 
 module.exports = {

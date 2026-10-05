@@ -1,9 +1,22 @@
 const express = require("express");
-
-const { signup } = require("../controllers/authcontroller");
+const { rateLimit } = require("express-rate-limit");
+const authController = require("../controllers/authcontroller");
+const { protectRoute } = require("../middleware/authMiddleware");
 
 const router = express.Router();
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    message: {
+        status: "fail",
+        message: "Too many authentication attempts. Try again later.",
+    },
+});
 
-router.post("/signup", signup);
+router.post("/signup", authLimiter, authController.signup);
+router.post("/login", authLimiter, authController.login);
+router.get("/me", protectRoute, authController.getCurrentUser);
 
 module.exports = router;
