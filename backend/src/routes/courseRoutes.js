@@ -1,27 +1,41 @@
 const express = require("express");
+
 const courseController = require("../controllers/coursecontroller");
 const authMiddleware = require("../middleware/authMiddleware");
+
 const { protectRoute, restrictTo } = authMiddleware;
 
 const router = express.Router();
 
-router
-  .route("/createcourse")
-  .post(
-    authMiddleware.protectRoute,
-    authMiddleware.restrictTo("instructor", "admin"),
-    courseController.createCourse,
-  );
+router.post(
+  "/createcourse",
+  protectRoute,
+  restrictTo("instructor", "admin"),
+  courseController.createCourse
+);
 
-router.route("/getAllCourses").get(courseController.getAllCourses);
+router.get(
+  "/getallcourses",
+  courseController.getAllCourses
+);
 
-router
-  .route("/:id")
-  .get(courseController.getCourseById)
-  .patch(
-    protectRoute,
-    restrictTo("instructor", "admin"),
-    courseController.updateCourse,
-  );
+router.get(
+  "/getcoursesbyid/:id",
+  courseController.getCourseById
+);
+
+router.patch(
+  "/updatecourses/:id",
+  protectRoute,
+  restrictTo("instructor", "admin"),
+  courseController.updateCourse
+);
+
+router.delete(
+  "/deletecourse/:id",
+  protectRoute,
+  restrictTo("instructor", "admin"),
+  courseController.deleteCourse
+);
 
 module.exports = router;

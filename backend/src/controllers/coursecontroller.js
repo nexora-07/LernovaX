@@ -5,8 +5,19 @@ const createCourse = async (req, res, next) => {
   try {
     const { title, description, category, price, thumbnail } = req.body;
 
+    const existingCourse = await Course.findOne({
+      title: title.trim(),
+      instructor: req.user._id,
+    });
+
+    if (existingCourse) {
+      return next(
+        new AppError("You already have a course with this title", 409),
+      );
+    }
+
     const course = await Course.create({
-      title,
+      title: title.trim(),
       description,
       category,
       price,
@@ -81,9 +92,24 @@ const updateCourse = async (req, res, next) => {
   }
 };
 
+const deleteCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findByIdAndDelete(req.params.id);
+
+    if (!course) {
+      return next(new AppError("Course not found", 404));
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createCourse,
   getAllCourses,
   getCourseById,
   updateCourse,
+  deleteCourse,
 };
