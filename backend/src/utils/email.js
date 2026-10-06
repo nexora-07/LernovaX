@@ -4,9 +4,6 @@ const sendEmail = async(options)=>{
     const email = process.env.EMAIL;
     const password = process.env.EMAIL_PASSWORD;
 
-
-    //creating email transporter
-
     const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
@@ -14,9 +11,6 @@ const sendEmail = async(options)=>{
             pass: password
         }
     });
-
-
-    //configure options
 
     const mailOptions = {
         from: "LernovaX <kikioriireaborisade@gmail.com>",
