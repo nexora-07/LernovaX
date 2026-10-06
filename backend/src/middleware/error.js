@@ -46,7 +46,7 @@ const handleJWTExpiredError = () => {
 
 // Development error response
 const sendDevError = (err, res) => {
-  const statusCode = err.statusCode || 500;
+  const statusCode = err.statusCode || err.status || 500;
 
   res.status(statusCode).json({
     status: err.status || "error",
@@ -79,9 +79,11 @@ const errorHandler = (err, req, res, next) => {
     return sendDevError(err, res);
   }
 
-  let error = { ...err };
+  let error = err;
 
-  if (err.code === 11000) {
+  if (err.type === "entity.too.large") {
+    error = new AppError("Request body is too large", 413);
+  } else if (err.code === 11000) {
     error = handleDuplicateError(err);
   } else if (err.name === "CastError") {
     error = handleCastError(err);
