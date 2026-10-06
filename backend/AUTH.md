@@ -19,17 +19,26 @@ The API listens on port `5000` by default.
 
 ## Try the endpoints
 
-Create an account. The server always assigns new accounts the `student` role; a `role` sent by the client is ignored.
+Student accounts sign up and log in using the existing `/signup` and `/login` endpoints. Signup requires `confirmPassword`; any `role` sent by the client is ignored.
 
 ```powershell
 $signup = Invoke-RestMethod -Method Post `
   -Uri http://localhost:5000/api/v1/auth/signup `
   -ContentType 'application/json' `
-  -Body '{"firstname":"Ada","lastname":"Lovelace","email":"ada@example.com","password":"learning123"}'
+  -Body '{"firstname":"Ada","lastname":"Lovelace","email":"ada@example.com","password":"learning123","confirmPassword":"learning123"}'
 $token = $signup.data.token
 ```
 
-Sign in with the same account:
+Instructor and admin accounts use separate signup and login endpoints. Configure private `INSTRUCTOR_SIGNUP_CODE` and `ADMIN_SIGNUP_CODE` values of at least 32 random bytes in `.env`. Deliver the applicable signup code to authorized staff through a trusted channel; never embed it in frontend code. Each staff member also has a unique personal ID, required at signup and login.
+
+```powershell
+$instructor = Invoke-RestMethod -Method Post `
+  -Uri http://localhost:5000/api/v1/auth/signup/instructor `
+  -ContentType 'application/json' `
+  -Body '{"firstname":"Grace","lastname":"Hopper","email":"grace@example.com","password":"learning123","confirmPassword":"learning123","instructorId":"INS-1001","signupCode":"<INSTRUCTOR_SIGNUP_CODE>"}'
+```
+
+Student sign-in uses email and password:
 
 ```powershell
 $login = Invoke-RestMethod -Method Post `
@@ -38,6 +47,17 @@ $login = Invoke-RestMethod -Method Post `
   -Body '{"email":"ada@example.com","password":"learning123"}'
 $token = $login.data.token
 ```
+
+Instructor sign-in requires the registered Instructor ID as well:
+
+```powershell
+$login = Invoke-RestMethod -Method Post `
+  -Uri http://localhost:5000/api/v1/auth/login/instructor `
+  -ContentType 'application/json' `
+  -Body '{"instructorId":"INS-1001","email":"grace@example.com","password":"learning123"}'
+```
+
+Admin signup and login use `/signup/admin` and `/login/admin`, with `adminId` and the configured `ADMIN_SIGNUP_CODE` on signup.
 
 Use the returned token to get the current account:
 

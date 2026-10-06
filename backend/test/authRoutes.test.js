@@ -41,6 +41,47 @@ test("current-user endpoint requires a bearer token", async (context) => {
     assert.equal((await response.json()).message, "Please sign in to access this resource");
 });
 
+test("role-specific signup endpoints validate confirmation and account IDs", async (context) => {
+    const server = app.listen(0);
+    context.after(() => new Promise((resolve, reject) => {
+        server.closeAllConnections();
+        server.close((error) => error ? reject(error) : resolve());
+    }));
+
+    const baseUrl = `http://127.0.0.1:${server.address().port}/api/v1/auth`;
+    const account = {
+        firstname: "Ada",
+        lastname: "Lovelace",
+        email: "ada@example.com",
+        password: "correct-horse",
+        confirmPassword: "different-password",
+    };
+
+    const studentResponse = await fetch(`${baseUrl}/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(account),
+    });
+    assert.equal(studentResponse.status, 400);
+    assert.equal((await studentResponse.json()).message, "Passwords do not match");
+
+    const instructorResponse = await fetch(`${baseUrl}/signup/instructor`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...account, confirmPassword: account.password }),
+    });
+    assert.equal(instructorResponse.status, 400);
+    assert.equal((await instructorResponse.json()).message, "Instructor ID is required");
+
+    const adminResponse = await fetch(`${baseUrl}/signup/admin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...account, confirmPassword: account.password }),
+    });
+    assert.equal(adminResponse.status, 400);
+    assert.equal((await adminResponse.json()).message, "Admin ID is required");
+});
+
 test("JSON request bodies above the configured limit are rejected", async (context) => {
     const server = app.listen(0);
     context.after(() => new Promise((resolve, reject) => {
