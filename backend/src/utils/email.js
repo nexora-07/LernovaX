@@ -1,26 +1,27 @@
-const nodemailer = require('nodemailer');
+const { BrevoClient } = require("@getbrevo/brevo");
 
-const sendEmail = async(options)=>{
-    const email = process.env.EMAIL;
-    const password = process.env.EMAIL_PASSWORD;
+const brevo = new BrevoClient({
+  apiKey: process.env.BREVO_API_KEY,
+});
 
-    const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-            user: email,
-            pass: password
-        }
-    });
+const sendEmail = async (to, subject, htmlContent) => {
+  const response = await brevo.transactionalEmails.sendTransacEmail({
+    sender: {
+      name: "LernovaX",
+      email: process.env.BREVO_SENDER_EMAIL,
+    },
 
-    const mailOptions = {
-        from: "LernovaX <kikioriireaborisade@gmail.com>",
-        to: options.email,
-        subject: options.subject,
-        text: options.message
-    };
+    to: [
+      {
+        email: to,
+      },
+    ],
 
+    subject,
+    htmlContent,
+  });
 
-    await transporter.sendMail(mailOptions)
+  return response;
 };
 
 module.exports = sendEmail;
