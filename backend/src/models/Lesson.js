@@ -29,4 +29,6 @@ const lessonSchema = new mongoose.Schema(
     }
 );
 
+lessonSchema.index({ course: 1, title: 1 }, { unique: true });
+
 module.exports = mongoose.model("Lesson", lessonSchema);
