@@ -1,17 +1,34 @@
+const mongoose = require("mongoose");
 const Enrollment = require("../models/Enrollment");
 const Course = require("../models/Course");
-const User = require("../models/user");
+
+const validateCourseId = (courseId, res) => {
+  if (!courseId) {
+    res.status(400).json({
+      status: "failed",
+      message: "courseId is required",
+    });
+    return false;
+  }
+
+  if (!mongoose.isObjectIdOrHexString(courseId)) {
+    res.status(400).json({
+      status: "failed",
+      message: "courseId must be a valid MongoDB ObjectId",
+    });
+    return false;
+  }
+
+  return true;
+};
 
 const enrollInCourse = async (req, res, next) => {
   try {
-    const studentId = req.user?.id || req.body.studentId || req.body.userId;
+    const studentId = req.user.id;
     const { courseId } = req.body;
 
-    if (!studentId || !courseId) {
-      return res.status(400).json({
-        status: "failed",
-        message: "studentId and courseId are required",
-      });
+    if (!validateCourseId(courseId, res)) {
+      return;
     }
 
     const course = await Course.findById(courseId);
@@ -19,14 +36,6 @@ const enrollInCourse = async (req, res, next) => {
       return res.status(404).json({
         status: "failed",
         message: "Course not found",
-      });
-    }
-
-    const student = await User.findById(studentId);
-    if (!student) {
-      return res.status(404).json({
-        status: "failed",
-        message: "Student not found",
       });
     }
 
@@ -66,14 +75,7 @@ const enrollInCourse = async (req, res, next) => {
 
 const getMyEnrollments = async (req, res, next) => {
   try {
-    const studentId = req.user?.id || req.query.studentId || req.params.studentId;
-
-    if (!studentId) {
-      return res.status(400).json({
-        status: "failed",
-        message: "studentId is required",
-      });
-    }
+    const studentId = req.user.id;
 
     const enrollments = await Enrollment.find({ student: studentId })
       .populate("course", "title description category price isPublished")
@@ -93,21 +95,17 @@ const getMyEnrollments = async (req, res, next) => {
 
 const updateEnrollmentStatus = async (req, res, next) => {
   try {
-    const studentId = req.user?.id || req.body?.studentId || req.query?.studentId;
+    const studentId = req.user.id;
     const { courseId } = req.params;
     const { status } = req.body || {};
 
-    if (!studentId || !courseId) {
-      return res.status(400).json({
-        status: "failed",
-        message: "studentId and courseId are required",
-      });
+    if (!validateCourseId(courseId, res)) {
+      return;
     }
 
     const validStatuses = ["active", "completed", "cancelled"];
-    const nextStatus = status || "active";
 
-    if (!validStatuses.includes(nextStatus)) {
+    if (!validStatuses.includes(status)) {
       return res.status(400).json({
         status: "failed",
         message: "status must be one of: active, completed, cancelled",
@@ -116,7 +114,7 @@ const updateEnrollmentStatus = async (req, res, next) => {
 
     const enrollment = await Enrollment.findOneAndUpdate(
       { student: studentId, course: courseId },
-      { status: nextStatus },
+      { status },
       { new: true },
     ).populate("course", "title description category");
 
@@ -140,14 +138,11 @@ const updateEnrollmentStatus = async (req, res, next) => {
 
 const cancelEnrollment = async (req, res, next) => {
   try {
-    const studentId = req.user?.id || req.body?.studentId || req.query?.studentId;
+    const studentId = req.user.id;
     const { courseId } = req.params;
 
-    if (!studentId || !courseId) {
-      return res.status(400).json({
-        status: "failed",
-        message: "studentId and courseId are required",
-      });
+    if (!validateCourseId(courseId, res)) {
+      return;
     }
 
     const enrollment = await Enrollment.findOneAndUpdate(
