@@ -7,6 +7,8 @@ const morgan = require("morgan");
 const authRoutes = require("./src/routes/authRoutes");
 const courseRoutes = require("./src/routes/courseRoutes");
 const enrollmentRoutes = require("./src/routes/enrollmentRoutes");
+const lessonRoutes = require("./src/routes/lessonRoutes");
+const materialRoutes = require("./src/routes/materialRoutes");
 const errorHandler = require("./src/middleware/error");
 const app = express();
 
@@ -56,6 +58,11 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/courses", courseRoutes);
 app.use("/api/v1/enrollments", enrollmentRoutes);
 
+//Lesson routes
+app.use("/api/v1/lessons", lessonRoutes);
+
+//Material routes
+app.use("/api/v1/materials", materialRoutes);
 
 app.use(errorHandler);
 

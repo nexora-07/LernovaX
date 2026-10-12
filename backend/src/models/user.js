@@ -43,6 +43,11 @@ const userSchema = new mongoose.Schema(
       default: "student",
     },
 
+    profile_image: {
+      type: String
+    },
+
+
     instructorId: {
       type: String,
       trim: true,
