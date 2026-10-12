@@ -66,16 +66,4 @@ app.use("/api/v1/materials", materialRoutes);
 
 app.use(errorHandler);
 
-app.use((error, req, res, next) => {
-  const statusCode = error.statusCode || error.status || 500;
-
-  res.status(statusCode).json({
-    status: statusCode >= 500 ? "error" : "fail",
-    message:
-      statusCode >= 500 && process.env.NODE_ENV === "production"
-        ? "An unexpected error occurred"
-        : error.message,
-  });
-});
-
 module.exports = app;

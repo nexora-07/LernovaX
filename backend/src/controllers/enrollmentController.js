@@ -1,42 +1,38 @@
 const mongoose = require("mongoose");
 const Enrollment = require("../models/Enrollment");
 const Course = require("../models/Course");
+const AppError = require("../utils/AppError");
 
-const validateCourseId = (courseId, res) => {
+const getStudentId = (req) => {
+  if (!req.user?._id) {
+    throw new AppError("Please sign in to access this resource", 401);
+  }
+  if (req.user.role !== "student") {
+    throw new AppError("You do not have permission to perform this action", 403);
+  }
+
+  return req.user._id;
+};
+
+const validateCourseId = (courseId) => {
   if (!courseId) {
-    res.status(400).json({
-      status: "failed",
-      message: "courseId is required",
-    });
-    return false;
+    throw new AppError("courseId is required", 400);
   }
 
   if (!mongoose.isObjectIdOrHexString(courseId)) {
-    res.status(400).json({
-      status: "failed",
-      message: "courseId must be a valid MongoDB ObjectId",
-    });
-    return false;
+    throw new AppError("courseId must be a valid MongoDB ObjectId", 400);
   }
-
-  return true;
 };
 
 const enrollInCourse = async (req, res, next) => {
   try {
-    const studentId = req.user.id;
-    const { courseId } = req.body;
-
-    if (!validateCourseId(courseId, res)) {
-      return;
-    }
+    const studentId = getStudentId(req);
+    const { courseId } = req.body || {};
+    validateCourseId(courseId);
 
     const course = await Course.findById(courseId);
     if (!course) {
-      return res.status(404).json({
-        status: "failed",
-        message: "Course not found",
-      });
+      throw new AppError("Course not found", 404);
     }
 
     const existingEnrollment = await Enrollment.findOne({
@@ -45,10 +41,7 @@ const enrollInCourse = async (req, res, next) => {
     });
 
     if (existingEnrollment) {
-      return res.status(409).json({
-        status: "failed",
-        message: "Student is already enrolled in this course",
-      });
+      throw new AppError("Student is already enrolled in this course", 409);
     }
 
     const enrollment = await Enrollment.create({
@@ -63,26 +56,29 @@ const enrollInCourse = async (req, res, next) => {
     ]);
 
     return res.status(201).json({
-      status: "successful",
+      status: "success",
       data: {
         enrollment: populatedEnrollment,
       },
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return next(new AppError("Student is already enrolled in this course", 409));
+    }
     return next(error);
   }
 };
 
 const getMyEnrollments = async (req, res, next) => {
   try {
-    const studentId = req.user.id;
+    const studentId = getStudentId(req);
 
     const enrollments = await Enrollment.find({ student: studentId })
       .populate("course", "title description category price isPublished")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
-      status: "successful",
+      status: "success",
       results: enrollments.length,
       data: {
         enrollments,
@@ -95,21 +91,15 @@ const getMyEnrollments = async (req, res, next) => {
 
 const updateEnrollmentStatus = async (req, res, next) => {
   try {
-    const studentId = req.user.id;
+    const studentId = getStudentId(req);
     const { courseId } = req.params;
     const { status } = req.body || {};
-
-    if (!validateCourseId(courseId, res)) {
-      return;
-    }
+    validateCourseId(courseId);
 
     const validStatuses = ["active", "completed", "cancelled"];
 
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        status: "failed",
-        message: "status must be one of: active, completed, cancelled",
-      });
+      throw new AppError("status must be one of: active, completed, cancelled", 400);
     }
 
     const enrollment = await Enrollment.findOneAndUpdate(
@@ -119,14 +109,11 @@ const updateEnrollmentStatus = async (req, res, next) => {
     ).populate("course", "title description category");
 
     if (!enrollment) {
-      return res.status(404).json({
-        status: "failed",
-        message: "Enrollment not found",
-      });
+      throw new AppError("Enrollment not found", 404);
     }
 
     return res.status(200).json({
-      status: "successful",
+      status: "success",
       data: {
         enrollment,
       },
@@ -138,12 +125,9 @@ const updateEnrollmentStatus = async (req, res, next) => {
 
 const cancelEnrollment = async (req, res, next) => {
   try {
-    const studentId = req.user.id;
+    const studentId = getStudentId(req);
     const { courseId } = req.params;
-
-    if (!validateCourseId(courseId, res)) {
-      return;
-    }
+    validateCourseId(courseId);
 
     const enrollment = await Enrollment.findOneAndUpdate(
       { student: studentId, course: courseId },
@@ -152,14 +136,11 @@ const cancelEnrollment = async (req, res, next) => {
     ).populate("course", "title description category");
 
     if (!enrollment) {
-      return res.status(404).json({
-        status: "failed",
-        message: "Enrollment not found",
-      });
+      throw new AppError("Enrollment not found", 404);
     }
 
     return res.status(200).json({
-      status: "successful",
+      status: "success",
       data: {
         enrollment,
       },
