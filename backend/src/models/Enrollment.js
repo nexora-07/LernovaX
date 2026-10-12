@@ -1,5 +1,36 @@
 const mongoose = require("mongoose");
 
+const progressSchema = new mongoose.Schema(
+  {
+    completedLessons: {
+      type: [String],
+      default: [],
+    },
+    totalLessons: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    startedAt: {
+      type: Date,
+      default: null,
+    },
+    completedAt: {
+      type: Date,
+      default: null,
+    },
+    lastLessonId: {
+      type: String,
+      default: null,
+    },
+    updatedAt: {
+      type: Date,
+      default: null,
+    },
+  },
+  { _id: false },
+);
+
 const enrollmentSchema = new mongoose.Schema(
   {
     student: {
@@ -20,6 +51,10 @@ const enrollmentSchema = new mongoose.Schema(
     enrolledAt: {
       type: Date,
       default: Date.now,
+    },
+    progress: {
+      type: progressSchema,
+      default: () => ({}),
     },
   },
   {
