@@ -7,31 +7,57 @@ const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 1024 * 1024 * 5 }, //5mb
+  limits: { fileSize: 1024 * 1024 * 10 }, //10mb
   fileFilter: (req, file, cb) => {
-    const fileTypes = /jpg|jpeg|png/;
-    const mimeType = fileTypes.test(file.mimetype);
-    const extname = fileTypes.test(
-      path.extname(file.originalname).toLowerCase(),
-    );
+    const allowedExtensions = new Set([
+      ".jpg",
+      ".jpeg",
+      ".png",
+      ".pdf",
+      ".mp3",
+      ".wav",
+      ".ogg",
+      ".oga",
+      ".m4a",
+      ".aac",
+      ".flac",
+      ".mp4",
+      ".webm",
+      ".mov",
+      ".avi",
+      ".mkv",
+      ".mpeg",
+      ".mpg",
+      ".m4v",
+    ]);
+    const extension = path.extname(file.originalname).toLowerCase();
+    const mimeType =
+      /^(image\/(jpeg|png)|application\/pdf|audio\/|video\/)/i.test(
+        file.mimetype,
+      );
+    const extname = allowedExtensions.has(extension);
 
     if (mimeType && extname) {
       return cb(null, true);
     }
-    cb("Error: File upload only supoorts the following filetypes" + fileTypes);
+    cb(
+      new Error(
+        "File upload only supports JPG, JPEG, PNG, PDF, audio, and video files",
+      ),
+    );
   },
 }).fields([
   { name: "profile_image", maxCount: 1 },
-  { name: "product_image", maxCount: 3 },
+  { name: "material_file", maxCount: 3 },
 ]);
 
-const imageUploads = (req, res, next) => {
+const fileUploads = (req, res, next) => {
   upload(req, res, (err) => {
     if (err) return next(err);
 
     const profileImage = req.files?.profile_image?.[0];
-    const productImage = req.files?.product_image?.[0];
-    req.file = profileImage || productImage;
+    const materialFile = req.files?.material_file?.[0];
+    req.file = profileImage || materialFile;
 
     next();
   });
@@ -48,4 +74,4 @@ const dataUri = (req) => {
   );
 };
 
-module.exports = { dataUri, imageUploads };
+module.exports = { dataUri, fileUploads };

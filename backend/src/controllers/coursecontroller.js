@@ -72,14 +72,24 @@ const getCourseById = async (req, res, next) => {
 
 const updateCourse = async (req, res, next) => {
   try {
-    const course = await Course.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const course = await Course.findById(req.params.id);
 
     if (!course) {
       return next(new AppError("Course not found", 404));
     }
+
+    if (
+      req.user.role !== "admin" &&
+      course.instructor.toString() !== req.user._id.toString()
+    ) {
+      return next(
+        new AppError("You can only update your own courses", 403)
+      );
+    }
+
+    Object.assign(course, req.body);
+
+    await course.save();
 
     res.status(200).json({
       status: "successful",
@@ -94,11 +104,22 @@ const updateCourse = async (req, res, next) => {
 
 const deleteCourse = async (req, res, next) => {
   try {
-    const course = await Course.findByIdAndDelete(req.params.id);
+    const course = await Course.findById(req.params.id);
 
     if (!course) {
       return next(new AppError("Course not found", 404));
     }
+
+    if (
+      req.user.role !== "admin" &&
+      course.instructor.toString() !== req.user._id.toString()
+    ) {
+      return next(
+        new AppError("You can only delete your own courses", 403)
+      );
+    }
+
+    await course.deleteOne();
 
     res.status(204).send();
   } catch (error) {

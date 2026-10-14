@@ -7,6 +7,8 @@ const morgan = require("morgan");
 const authRoutes = require("./src/routes/authRoutes");
 const courseRoutes = require("./src/routes/courseRoutes");
 const enrollmentRoutes = require("./src/routes/enrollmentRoutes");
+const lessonRoutes = require("./src/routes/lessonRoutes");
+const materialRoutes = require("./src/routes/materialRoutes");
 const errorHandler = require("./src/middleware/error");
 const app = express();
 
@@ -53,22 +55,19 @@ app.get("/api/v1", (req, res) => {
 
 // Auth routes
 app.use("/api/v1/auth", authRoutes);
+
+//course routes
 app.use("/api/v1/courses", courseRoutes);
+
+//enrollments routes
 app.use("/api/v1/enrollments", enrollmentRoutes);
 
+//Lesson routes
+app.use("/api/v1/lessons", lessonRoutes);
+
+//Material routes
+app.use("/api/v1/materials", materialRoutes);
 
 app.use(errorHandler);
-
-app.use((error, req, res, next) => {
-  const statusCode = error.statusCode || error.status || 500;
-
-  res.status(statusCode).json({
-    status: statusCode >= 500 ? "error" : "fail",
-    message:
-      statusCode >= 500 && process.env.NODE_ENV === "production"
-        ? "An unexpected error occurred"
-        : error.message,
-  });
-});
 
 module.exports = app;

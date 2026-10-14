@@ -1,41 +1,41 @@
-const express = require("express");
+  const express = require("express");
 
-const courseController = require("../controllers/coursecontroller");
-const authMiddleware = require("../middleware/authMiddleware");
+  const courseController = require("../controllers/coursecontroller");
+  const authMiddleware = require("../middleware/authMiddleware");
 
-const { protectRoute, restrictTo } = authMiddleware;
+  const { protectRoute, restrictTo } = authMiddleware;
 
-const router = express.Router();
+  const router = express.Router();
 
-router.post(
-  "/createcourse",
-  protectRoute,
-  restrictTo("instructor", "admin"),
-  courseController.createCourse
-);
+  router.post(
+    "/createcourse",
+    protectRoute,
+    restrictTo("instructor", "admin"),
+    courseController.createCourse
+  );
 
-router.get(
-  "/getallcourses",
-  courseController.getAllCourses
-);
+  router.get(
+    "/getallcourses",
+    courseController.getAllCourses
+  );
 
-router.get(
-  "/getcoursesbyid/:id",
-  courseController.getCourseById
-);
+  router.get(
+    "/getcoursesbyid/:id",
+    courseController.getCourseById
+  );
 
-router.patch(
-  "/updatecourses/:id",
-  protectRoute,
-  restrictTo("instructor", "admin"),
-  courseController.updateCourse
-);
+  router.patch(
+    "/updatecourses/:id",
+    protectRoute,
+    restrictTo("instructor", "admin"),
+    courseController.updateCourse
+  );
 
-router.delete(
-  "/deletecourse/:id",
-  protectRoute,
-  restrictTo("instructor", "admin"),
-  courseController.deleteCourse
-);
+  router.delete(
+    "/deletecourse/:id",
+    protectRoute,
+    restrictTo("instructor", "admin"),
+    courseController.deleteCourse
+  );
 
-module.exports = router;
+  module.exports = router;
