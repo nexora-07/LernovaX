@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test",
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "bootstrap:admin": "node scripts/create-first-admin.js"
   },
   "keywords": [],
   "author": "",

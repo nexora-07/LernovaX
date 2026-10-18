@@ -342,17 +342,15 @@ const loginInstructor = async (req, res, next) => {
       throw new AppError(validationError, 400);
     }
 
-    const email = req.body.email.trim().toLowerCase();
     const instructorId = normalizeId(req.body.instructorId);
 
     const user = await User.findOne({
-      email,
       role: "instructor",
       instructorId,
     }).select("+password");
 
     if (!user) {
-      throw new AppError("Incorrect email, password, or Instructor ID", 401);
+      throw new AppError("Incorrect Instructor ID or password", 401);
     }
 
     const passwordIsValid = await bcrypt.compare(
@@ -361,7 +359,7 @@ const loginInstructor = async (req, res, next) => {
     );
 
     if (!passwordIsValid) {
-      throw new AppError("Incorrect email or password", 401);
+      throw new AppError("Incorrect Instructor ID or password", 401);
     }
 
     return res.status(200).json({
@@ -384,17 +382,15 @@ const loginAdmin = async (req, res, next) => {
       throw new AppError(validationError, 400);
     }
 
-    const email = req.body.email.trim().toLowerCase();
     const adminId = normalizeId(req.body.adminId);
 
     const user = await User.findOne({
-      email,
       role: "admin",
       adminId,
     }).select("+password");
 
     if (!user) {
-      throw new AppError("Incorrect email, password, or Admin ID", 401);
+      throw new AppError("Incorrect Admin ID or password", 401);
     }
 
     const passwordIsValid = await bcrypt.compare(
@@ -403,7 +399,7 @@ const loginAdmin = async (req, res, next) => {
     );
 
     if (!passwordIsValid) {
-      throw new AppError("Incorrect email or password", 401);
+      throw new AppError("Incorrect Admin ID or password", 401);
     }
 
     return res.status(200).json({

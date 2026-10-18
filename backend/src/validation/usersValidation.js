@@ -63,24 +63,31 @@ const validateLogin = (body = {}, role = "student") => {
 
   const { email, password } = body;
 
+  if (role !== "student" && role !== "instructor" && role !== "admin") {
+    return "Invalid account role";
+  }
+
+  if (role === "instructor" || role === "admin") {
+    const accountId = role === "instructor" ? body.instructorId : body.adminId;
+    const accountType = role === "instructor" ? "Instructor" : "Admin";
+
+    if (!isNonEmptyString(accountId)) {
+      return `${accountType} ID is required`;
+    }
+
+    if (typeof password !== "string" || password.length === 0) {
+      return `${accountType} ID and password are required`;
+    }
+
+    return null;
+  }
+
   if (!isNonEmptyString(email) || !isValidEmail(email)) {
     return "Please provide a valid email address";
   }
 
   if (typeof password !== "string" || password.length === 0) {
     return "Email and password are required";
-  }
-
-  if (role === "instructor" && !isNonEmptyString(body.instructorId)) {
-    return "Instructor ID is required";
-  }
-
-  if (role === "admin" && !isNonEmptyString(body.adminId)) {
-    return "Admin ID is required";
-  }
-
-  if (role !== "student" && role !== "instructor" && role !== "admin") {
-    return "Invalid account role";
   }
 
   return null;

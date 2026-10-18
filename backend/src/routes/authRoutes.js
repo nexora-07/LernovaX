@@ -4,7 +4,10 @@ const { rateLimit } = require("express-rate-limit");
 
 const authController = require("../controllers/authcontroller");
 
-const { protectRoute } = require("../middleware/authMiddleware");
+const {
+  protectRoute,
+  restrictTo,
+} = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -28,12 +31,16 @@ router.post("/signup", authLimiter, authController.signup);
 router.post(
   "/signup/instructor",
   authLimiter,
+  protectRoute,
+  restrictTo("admin"),
   authController.signupInstructor
 );
 
 router.post(
   "/signup/admin",
   authLimiter,
+  protectRoute,
+  restrictTo("admin"),
   authController.signupAdmin
 );
 

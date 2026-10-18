@@ -57,11 +57,11 @@ All signup endpoints accept JSON and require:
 
 `role` is assigned by the endpoint; clients cannot select it in the body.
 
-| Method | Path | Account role | Additional fields |
-|---|---|---|---|
-| POST | `/auth/signup` | student | None |
-| POST | `/auth/signup/instructor` | instructor | `instructorId` (required) |
-| POST | `/auth/signup/admin` | admin | `adminId` (required) |
+| Method | Path | Account role | Additional fields | Access |
+|---|---|---|---|---|
+| POST | `/auth/signup` | student | None | Public |
+| POST | `/auth/signup/instructor` | instructor | `instructorId` (required) | Admin bearer token |
+| POST | `/auth/signup/admin` | admin | `adminId` (required) | Admin bearer token |
 
 Example student signup:
 
@@ -80,11 +80,16 @@ Signup returns HTTP 201 with `status`, `message`, and `data.user`. It sends an
 email verification code, which expires after 10 minutes. Signup does **not**
 return a JWT; sign in after signup to obtain one.
 
-**Deployment/security note:** instructor and admin signup routes are currently
-public and the controller does not validate a signup code. Do not expose these
-routes as open staff-registration flows. Restrict staff account creation at the
-deployment/application level until the backend enforces an appropriate
-authorization policy.
+Admin signup is restricted to authenticated users with the `admin` role;
+unauthenticated requests receive HTTP 401 and other roles receive HTTP 403.
+The first admin is created once through the trusted `npm run bootstrap:admin`
+command from the `backend` directory, not through a public route. Set
+`ADMIN_BOOTSTRAP_FIRSTNAME`, `ADMIN_BOOTSTRAP_LASTNAME`,
+`ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_PHONE`, `ADMIN_BOOTSTRAP_ID`, and
+`ADMIN_BOOTSTRAP_PASSWORD` in the local process environment before running the
+command. It connects using `MONGODB_URL`, refuses to run if an admin already
+exists, hashes the password, and marks the initial admin email verified.
+Instructor signup is also restricted to authenticated admins.
 
 ### Verify email
 
@@ -107,8 +112,13 @@ verification flow after signup.
 | Method | Path | Required JSON fields |
 |---|---|---|
 | POST | `/auth/login` | `email`, `password` (student) |
-| POST | `/auth/login/instructor` | `email`, `password`, `instructorId` |
-| POST | `/auth/login/admin` | `email`, `password`, `adminId` |
+| POST | `/auth/login/instructor` | `instructorId`, `password` |
+| POST | `/auth/login/admin` | `adminId`, `password` |
+
+Staff IDs are matched case-insensitively after trimming surrounding
+whitespace. Instructor and admin login do not require or use an email address.
+Each account must already exist. Both staff signup endpoints are restricted to
+existing admins.
 
 Successful login returns HTTP 200:
 
@@ -137,6 +147,10 @@ Authentication endpoints are limited to 10 requests per IP per 15 minutes.
 
 `GET /auth/me` requires a bearer token and returns HTTP 200 with
 `{ "status": "success", "data": { "user": <public user> } }`.
+
+There is currently no mounted endpoint for adding or changing an account email,
+or for requesting a forgotten-password reset. `GET /auth/me` only reads the
+current account.
 
 ## Courses
 
